@@ -13,6 +13,8 @@ import sessionsRouter from "./routes/sessions.routes.js";
 import userViewRouter from "./routes/users.views.routes.js";
 import session from "express-session";
 import MongoStore from "connect-mongo";
+import passport from "passport";
+import "./passport.config.js";
 
 const app = express();
 const PORT = 8080;
@@ -20,7 +22,10 @@ const httpServer = app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
 
-const mongoDBConnection = mongoose.connect(`mongodb+srv://rubendns:UZLxn4iAGvcRngUY@cluster0.6lu3kn4.mongodb.net/?retryWrites=true&w=majority`)
+const mongoDBConnection = mongoose
+  .connect(
+    "mongodb+srv://rubendns:UZLxn4iAGvcRngUY@cluster0.6lu3kn4.mongodb.net/?retryWrites=true&w=majority"
+  )
   .then(() => {
     console.log("MongoDB Atlas connected!");
   })
@@ -32,7 +37,10 @@ mongoDBConnection;
 
 app.use(
   session({
-    store: MongoStore.create({ mongoUrl: `mongodb+srv://rubendns:UZLxn4iAGvcRngUY@cluster0.6lu3kn4.mongodb.net/?retryWrites=true&w=majority` }),
+    store: MongoStore.create({
+      mongoUrl:
+        "mongodb+srv://rubendns:UZLxn4iAGvcRngUY@cluster0.6lu3kn4.mongodb.net/?retryWrites=true&w=majority",
+    }),
     mongoOptions: { useNewUrlParser: true, useUnifiedTopology: true },
     ttl: 10 * 60,
     secret: "c0d1g0",
@@ -40,6 +48,9 @@ app.use(
     saveUninitialized: true,
   })
 );
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 const io = new Server(httpServer);
 
@@ -64,6 +75,7 @@ app.use(express.static(`${__dirname}/public`));
 
 app.use("/", viewsRouter);
 app.use("/users", userViewRouter);
+
 app.use("/api/sessions", sessionsRouter);
 
 io.on("connection", (socket) => {

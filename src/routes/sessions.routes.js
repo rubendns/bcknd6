@@ -1,90 +1,89 @@
-import { Router } from "express";
-import userModel from "../dao/models/user.model.js";
+import passport from 'passport';
+import { Strategy as LocalStrategy } from 'passport-local';
+import bcrypt from 'bcrypt';
+import userModel from '../dao/models/user.model.js';
 
-const router = Router();
+passport.use(
+  'local-register',
+  new LocalStrategy(
+    {
+      usernameField: 'email',
+      passwordField: 'password',
+      passReqToCallback: true,
+    },
+    async (req, email, password, done) => {
+      try {
+        const exist = await userModel.findOne({ email });
 
-router.post("/register", async (req, res) => {
-  const { first_name, last_name, email, age, password } = req.body;
-  console.log("Registrando usuario:");
-  console.log(req.body);
+        if (exist) {
+          return done(null, false, { message: 'User already exists' });
+        }
 
-  const exist = await userModel.findOne({ email });
-  if (exist) {
-    return res
-      .status(400)
-      .send({ status: "error", message: "User already exists" });
-  }
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-  const user = {
-    first_name,
-    last_name,
-    email,
-    age,
-    password,
-  };
+        const user = {
+          first_name: req.body.first_name,
+          last_name: req.body.last_name,
+          email,
+          age: req.body.age,
+          password: hashedPassword,
+        };
 
-  const result = await userModel.create(user);
-  res.send({
-    status: "success",
-    message: "Successfully created user with ID: " + result.id,
-  });
-});
-
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  if (email === "adminCoder@coder.com" && password === "adminCod3r123") {
-    req.session.rol = "admin";
-    req.session.user = {
-      name: "Admin",
-      email: "adminCoder@coder.com",
-      rol: "admin",
-      age: 0,
-    };
-
-    return res.send({
-      status: "success",
-      payload: req.session.user,
-      message: "Admin login done :)",
-    });
-  }
-
-  const user = await userModel.findOne({ email, password });
-
-  if (!user) {
-    return res
-      .status(401)
-      .send({ status: "error", error: "Incorrect credentials" });
-  }
-
-  req.session.rol = "user";
-  req.session.user = {
-    name: `${user.first_name} ${user.last_name}`,
-    email: user.email,
-    rol: req.session.rol,
-    age: user.age,
-  };
-
-  res.send({
-    status: "success",
-    payload: req.session.user,
-    message: "User login done :)",
-  });
-});
-
-
-router.post("/logout", (req, res) => {
-  const userName = req.session.user ? req.session.user.name : "Unknown User";
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Logout error:", err);
-      return res
-        .status(500)
-        .send({ status: "error", msg: "Internal Server Error" });
+        const result = await userModel.create(user);
+        return done(null, result);
+      } catch (error) {
+        return done(error);
+      }
     }
-    console.log(`User ${userName} logged out successfully.`);
-    res.redirect("/users/login");
-  });
+  )
+);
+
+passport.use(
+  'local-login',
+  new LocalStrategy(
+    {
+      usernameField: 'email',
+      passwordField: 'password',
+    },
+    async (email, password, done) => {
+      try {
+        if (email === 'adminCoder@coder.com' && password === 'adminCod3r123') {
+          return done(null, {
+            name: 'Admin',
+            email: 'adminCoder@coder.com',
+            rol: 'admin',
+            age: 0,
+          });
+        }
+
+        const user = await userModel.findOne({ email });
+
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+          return done(null, false, { message: 'Incorrect credentials' });
+        }
+
+        return done(null, {
+          name: `${user.first_name} ${user.last_name}`,
+          email: user.email,
+          rol: 'user',
+          age: user.age,
+        });
+      } catch (error) {
+        return done(error);
+      }
+    }
+  )
+);
+
+passport.serializeUser((user, done) => {
+  done(null, user.email);
 });
 
-export default router;
+passport.deserializeUser(async (email, done) => {
+  try {
+    const user = await userModel.findOne({ email });
+    done(null, user);
+  } catch (error) {
+    done(error);
+  }
+});
