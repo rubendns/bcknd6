@@ -1,17 +1,18 @@
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import bcrypt from 'bcrypt';
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import bcrypt from "bcrypt";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Generamos el hash
-export const createHash = password => bcrypt.hashSync(password, bcrypt.genSaltSync(10));
+export const createHash = (password) =>
+    bcrypt.hashSync(password, bcrypt.genSaltSync(10));
 
 // Validamos el hash
 export const isValidPassword = (user, password) => {
-    console.log(`Datos a validar: user-password: ${user.passwordHash}, password: ${password}`);
+  //console.log(`Datos a validar: user-password: ${user.passwordHash}, password: ${password}`);
     return bcrypt.compareSync(password, user.passwordHash);
-}
+};
 
 export default __dirname;

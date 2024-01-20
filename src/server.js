@@ -2,7 +2,7 @@ import express from "express";
 import { ProductRouter } from "./routes/products.routes.js";
 import { CartsRouter } from "./routes/carts.routes.js";
 import handlebars from "express-handlebars";
-import __dirname from './utils.js';
+import __dirname from "./utils.js";
 import { viewsRouter } from "./routes/views.routes.js";
 import { Server } from "socket.io";
 import mongoose from "mongoose";
@@ -13,11 +13,9 @@ import sessionsRouter from "./routes/sessions.routes.js";
 import userViewRouter from "./routes/users.views.routes.js";
 import session from "express-session";
 import MongoStore from "connect-mongo";
-import passport from 'passport';
-import initializePassport from './config/passport.config.js'
-//import usersViewRouter from './routes/users.views.router.js';
-
-
+import passport from "passport";
+import initializePassport from "./config/passport.config.js";
+import githubLoginViewRouter from "./routes/github-login.views.router.js";
 
 const app = express();
 const PORT = 8080;
@@ -25,7 +23,10 @@ const httpServer = app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
 
-const mongoDBConnection = mongoose.connect(`mongodb+srv://rubendns:UZLxn4iAGvcRngUY@cluster0.6lu3kn4.mongodb.net/?retryWrites=true&w=majority`)
+const mongoDBConnection = mongoose
+  .connect(
+    `mongodb+srv://rubendns:UZLxn4iAGvcRngUY@cluster0.6lu3kn4.mongodb.net/?retryWrites=true&w=majority`
+  )
   .then(() => {
     console.log("MongoDB Atlas connected!");
   })
@@ -37,7 +38,9 @@ mongoDBConnection;
 
 app.use(
   session({
-    store: MongoStore.create({ mongoUrl: `mongodb+srv://rubendns:UZLxn4iAGvcRngUY@cluster0.6lu3kn4.mongodb.net/?retryWrites=true&w=majority` }),
+    store: MongoStore.create({
+      mongoUrl: `mongodb+srv://rubendns:UZLxn4iAGvcRngUY@cluster0.6lu3kn4.mongodb.net/?retryWrites=true&w=majority`,
+    }),
     mongoOptions: { useNewUrlParser: true, useUnifiedTopology: true },
     ttl: 10 * 60,
     secret: "c0d1g0",
@@ -45,8 +48,6 @@ app.use(
     saveUninitialized: true,
   })
 );
-
-
 
 const io = new Server(httpServer);
 
@@ -76,6 +77,10 @@ app.use(passport.session());
 app.use("/", viewsRouter);
 app.use("/users", userViewRouter);
 app.use("/api/sessions", sessionsRouter);
+app.use("/github", githubLoginViewRouter);
+app.get("/failure", (req, res) => {
+  res.status(404).send("Error: Página no encontrada");
+});
 
 io.on("connection", (socket) => {
   console.log("New client connected: " + socket.id);

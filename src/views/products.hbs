@@ -1,54 +1,56 @@
-<div >
-  <div class="row">
-    <div >
-      <div >
+<div>
+  <div>
+    <div>
+      <div>
         {{#if user}}
           <h1>Bienvenido {{user.name}}</h1>
+          <h2>Permisos: {{user.rol}}</h2>
         {{else}}
           <h1>Bienvenido Invitado</h1>
         {{/if}}
-        <h2>Permisos: {{user.rol}}</h2>
+
         <form action="/api/sessions/logout" method="post">
           <input type="submit" value="Logout" class="btn btn-primary" />
         </form>
       </div>
+
     </div>
   </div>
-  <div >
+  <div>
     {{#each products.docs}}
-      <div >
-        <div >
+      <div>
+        <div>
           <img src="{{thumbnails}}" alt="Product Image" />
-          <div >
-            <h5 >{{title}}</h5>
-            <p >{{description}}</p>
+          <div>
+            <h4>{{title}}</h4>
+            <p>{{description}}</p>
           </div>
-          <ul >
+          <ul>
             <li class="list-group-item">Code: {{code}}</li>
             <li class="list-group-item">Price: ${{price}}</li>
             <li class="list-group-item">Stock: {{stock}}</li>
             <li class="list-group-item">Category: {{category}}</li>
           </ul>
-          <div >
+          <div>
             {{#each thumbnails}}
               <img
                 src="{{this}}"
                 alt="Thumbnail"
                 width="40"
                 height="40"
-                style="margin-right: 5px;"
+                style="margin-right: 2px;"
               />
             {{/each}}
           </div>
-          <button type="button" class="btn btn-secondary" >Add to cart</button>
+          <button type="button" class="btn btn-secondary">Add to cart</button>
         </div>
       </div>
     {{/each}}
   </div>
 </div>
-<div >
-  <nav >
-    <ul >
+<div>
+  <nav>
+    <ul>
       {{#if products.hasPrevPage}}
         <li class="page-item"><a
             class="page-link"

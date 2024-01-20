@@ -4,52 +4,63 @@ import passport from "passport";
 
 const router = Router();
 
-router.post('/register', passport.authenticate('register', {
-    failureRedirect: 'api/session/fail-register',
-  }), async (req, res) => {
-    //const { first_name, last_name, email, age, password } = req.body;
-    console.log("Registrando usuario:");
-    res.status(201).send({ status: "success", message: "Usuario creado con extito." });
-
-    // const exist = await userModel.findOne({ email });
-    // if (exist) {
-    //   return res
-    //     .status(400)
-    //     .send({ status: "error", message: "User already exists" });
-    // }
-
-  //   const user = {
-  //     first_name,
-  //     last_name,
-  //     email,
-  //     age,
-  //     password,
-  //   };
-
-  //   const result = await userModel.create(user);
-  //   res.send({
-  //     status: "success",
-  //     message: "Successfully created user with ID: " + result.id,
-  //   });
+router.get("/github", passport.authenticate('github', { scope: ['user:email'] }), async (req, res) => {
+  { }
 })
+
+router.get("/githubcallback", passport.authenticate('github', { failureRedirect: '/fail-login' }), async (req, res) => {
+  const user = req.user;
+  req.session.user = {
+    name: user.first_name ? `${user.first_name} ${user.last_name}` : user.username,
+    email: user.email,
+    rol: user.rol
+  };
+  res.redirect("/products")
+})
+
+
+
+router.post(
+  "/register",
+  passport.authenticate("register", {
+    failureRedirect: "/api/session/fail-register",
+  }),
+  async (req, res) => {
+    if (req.isAuthenticated()) {
+      console.log("Registering the following new user:", req.user);
+      res.redirect("/");
+    } else {
+      res.status(500).send({ status: "error", message: "Error registering user." });
+    }
+  }
+);
+
 
 router.post(
   "/login",
-  passport.authenticate("login", {
-    failureRedirect: "api/session/fail-login",
-  }), async (req, res) => {
-    console.log("User found to login:");
-    //const { email, password } = req.body;
-    const user = req.user;
-    console.log(user);
+  (req, res, next) => {
+    if (req.body.email === "adminCoder@coder.com" && req.body.password === "adminCod3r123") {
+      req.adminUser = {
+        email: "adminCoder@coder.com",
+        password: "admin",
+      };
+      return next();
+    }
+    passport.authenticate("login", {
+      failureRedirect: "api/session/fail-login",
+    })(req, res, next);
+  },
+  async (req, res) => {
+    const user = req.adminUser || req.user;
+    console.log("User found to login: " + user.email);
 
     req.session.user = {
-      name: `${user.first_name} ${user.last_name}`,
+      name: `${user.first_name}`,
       email: user.email,
       age: user.age,
     };
 
-    if (email === "adminCoder@coder.com" && password === "adminCod3r123") {
+    if (req.adminUser) {
       req.session.rol = "admin";
       req.session.user = {
         name: "Admin",
@@ -65,29 +76,39 @@ router.post(
       });
     }
 
-    //const user = await userModel.findOne({ email, password });
+    try {
+      const dbUser = await userModel.findOne({ email: user.email });
 
-    if (!user) {
+      if (!dbUser) {
+        return res
+          .status(401)
+          .send({ status: "error", error: "Incorrect credentials" });
+      }
+
+      req.session.rol = "user";
+      req.session.user = {
+        name: `${dbUser.first_name}`,
+        email: dbUser.email,
+        rol: req.session.rol,
+        age: dbUser.age,
+      };
+
+      res.send({
+        status: "success",
+        payload: req.session.user,
+        message: "User login done :)",
+      });
+    } catch (error) {
       return res
-        .status(401)
-        .send({ status: "error", error: "Incorrect credentials" });
+        .status(500)
+        .send({ status: "error", msg: "Internal Server Error" });
     }
-
-    req.session.rol = "user";
-    req.session.user = {
-      name: `${user.first_name} ${user.last_name}`,
-      email: user.email,
-      rol: req.session.rol,
-      age: user.age,
-    };
-
-    res.send({
-      status: "success",
-      payload: req.session.user,
-      message: "User login done :)",
-    });
   }
 );
+
+router.get("/failure", (req, res) => {
+  res.status(404).send("Error: Page not found");
+});
 
 router.get("/fail-register", (req, res) => {
   res.status(401).send({ error: "Failed to process register!" });
@@ -98,7 +119,11 @@ router.get("/fail-login", (req, res) => {
 });
 
 router.post("/logout", (req, res) => {
-  const userName = req.session.user ? req.session.user.name : "Unknown User";
+  const userName =
+    req.session.user && req.session.user.name
+      ? req.session.user.name
+      : "Unknown User";
+
   req.session.destroy((err) => {
     if (err) {
       console.error("Logout error:", err);
@@ -106,9 +131,11 @@ router.post("/logout", (req, res) => {
         .status(500)
         .send({ status: "error", msg: "Internal Server Error" });
     }
+
     console.log(`User ${userName} logged out successfully.`);
     res.redirect("/users/login");
   });
 });
+
 
 export default router;

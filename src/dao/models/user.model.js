@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-//import bcrypt from "bcrypt";
+import bcrypt from "bcrypt";
 
 const collection = "users";
 
@@ -12,6 +12,12 @@ const schema = new mongoose.Schema({
   },
   age: Number,
   passwordHash: String,
+  //para github
+  username: String,
+  password: String,
+  loggedBy: String,
+  rol: String
+
 });
 
 schema.pre("save", async function (next) {

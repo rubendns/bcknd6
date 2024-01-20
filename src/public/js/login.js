@@ -13,11 +13,22 @@ form.addEventListener("submit", (e) => {
     headers: {
       "Content-Type": "application/json",
     },
-  }).then((result) => {
-    if (result.status === 200) {
-      window.location.replace("/products");
-    } else {
-      window.location.replace("/failure");
-    }
-  });
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      if (data.status === "success") {
+        window.location.replace("/products");
+      } else {
+        alert(data.error || "Invalid credentials");
+      }
+    })
+    .catch((error) => {
+      console.error("Error when making request:", error);
+      alert("Invalid credentials. Please try again.");
+    });
 });
