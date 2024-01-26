@@ -13,9 +13,19 @@ form.addEventListener("submit", (e) => {
     headers: {
       "Content-Type": "application/json",
     },
-  }).then((result) => {
-    if (result.status === 200) {
-      window.location.replace("/users/login");
-    }
-  });
+  })
+    .then((result) => {
+      if (result.status === 200) {
+        alert("¡User created successfully!");
+        setTimeout(() => {
+          window.location.replace("/users/login");
+        }, 200);
+      } else {
+        alert("There was a problem creating the user. Try again.");
+      }
+    })
+    .catch((error) => {
+      console.error("Request error:", error);
+      alert("There was a problem processing the request. Try again.");
+    });
 });
